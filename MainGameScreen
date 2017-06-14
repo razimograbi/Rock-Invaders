@@ -1,0 +1,224 @@
+public class MainGameScreen implements Screen {
+
+    public static final float MAN_ANIMATION_SPEED = 0.4f;
+    public static final int MAN_WIDTH_PIXEL = 19;
+    public static final int MAN_HEIGHT_PIXEL = 32;
+    public static final int MAN_WIDTH = MAN_WIDTH_PIXEL * 3;
+    public static final int MAN_HEIGHT = MAN_HEIGHT_PIXEL * 3;
+    public static final float MIN_SPAWN_TIME = 0.1f;
+    public static final float MAX_SPAWN_TIME = 0.3f;
+    public static final float SHOOT_WAIT_TIME = 0.25f;
+    public static final float SPEED = 140;
+
+    float x , y , statTime;
+    float health = 1; //dead = 0 , full health = 1
+
+    private BitmapFont ScoreFont;
+
+    Animation [] rolls;
+    float ShootTimer;
+
+
+    int roll , score ;
+    Texture img2;
+    Texture Health;
+    Texture controls;
+    IsToched PlayerToched;
+    ArrayList <Bullet> bullets;
+    ArrayList <FallingThings> Rocks;
+    Random random;
+    float FallingSpawnTimer;
+
+    MyGame2 game;
+    boolean ShowControls = true;
+
+    public MainGameScreen(MyGame2 game) {
+        this.game = game;
+        img2 = new Texture("video-game-background-1405076_960_720.png");
+        Health = new Texture("blankGame.png");
+        if (this.game.isMobile){
+            controls = new Texture("controlsGame.png");
+        }
+        y = 15;
+
+        random = new Random();
+
+        FallingSpawnTimer = random.nextFloat() * (MAX_SPAWN_TIME - MIN_SPAWN_TIME) + MIN_SPAWN_TIME;
+        ScoreFont = new BitmapFont();
+
+        PlayerToched = new IsToched(0 , 0 , MAN_WIDTH , MAN_HEIGHT);
+        ShootTimer = 0;
+
+       ScoreFont.getData().setScale(4,4); // How big is the text
+
+        x = MyGame2.WIDTH / 2 - MAN_WIDTH / 2;
+        roll = 2;
+        score = 0;
+        rolls = new Animation[5];
+        bullets = new ArrayList<Bullet>();
+        Rocks = new ArrayList<FallingThings>();
+        TextureRegion[] [] rollSpriteSheet = TextureRegion.split(new Texture("runningGrant.png"),167 , 341); //crating the man animation
+
+        rolls[roll] = new Animation(MAN_ANIMATION_SPEED , rollSpriteSheet[0]);
+    }
+
+
+    @Override
+    public void show() {
+
+    }
+
+    @Override
+    public void render(float delta) {
+        // my game input controllers
+        if (isLeft()){
+            x -= SPEED * Gdx.graphics.getDeltaTime();
+        }
+        if (isRight()){
+            x += SPEED * Gdx.graphics.getDeltaTime();
+        }
+        ShootTimer += delta;
+        if ((isRight() || isLeft()) && ShootTimer >= SHOOT_WAIT_TIME){
+            ShootTimer = 0;
+            bullets.add(new Bullet(x+26));
+            //chick if score more than 2500 add new bullet
+            if (score >= 2500){
+                bullets.add(new Bullet(x - 26));
+            }
+
+            ShootTimer-=SHOOT_WAIT_TIME;
+            //stop showing controls when start
+            ShowControls = false;
+        }
+
+        ArrayList<Bullet> BulletsToRemove = new ArrayList<Bullet>();
+        for (Bullet bullet : bullets ){
+            bullet.update(delta);
+            if (bullet.remove){
+                BulletsToRemove.add(bullet);
+            }
+
+        }
+
+        FallingSpawnTimer -= delta;
+        if (FallingSpawnTimer <= 0){
+            FallingSpawnTimer = random.nextFloat() * (MAX_SPAWN_TIME - MIN_SPAWN_TIME) + MIN_SPAWN_TIME;
+            Rocks.add(new FallingThings(random.nextInt((int) (MyGame2.WIDTH - FallingThings.width))));
+        }
+        ArrayList<FallingThings> RockstoRemove = new ArrayList<FallingThings>();
+        for (FallingThings Fall : Rocks){
+            Fall.update(delta);
+            if (Fall.remove){
+                RockstoRemove.add(Fall);
+            }
+        }
+        //if palyer toched by falling things
+        PlayerToched.move(x ,y);
+
+
+        //check if toched
+        for (Bullet bullet : bullets){
+            for (FallingThings Fall : Rocks){
+                if (bullet.getToched().CollidesWith(Fall.getToched())){
+                    BulletsToRemove.add(bullet);
+                    RockstoRemove.add(Fall);
+                    score +=100;
+                }
+            }
+        }
+        bullets.removeAll(BulletsToRemove);
+        Rocks.removeAll(RockstoRemove);
+
+
+        for (FallingThings Fall : Rocks){
+            if (Fall.getToched().CollidesWith(PlayerToched)){
+                RockstoRemove.add(Fall);
+                health -= 0.01;
+                //if dead what to do
+                if (health <= 0){
+                    game.setScreen(new MainMenuScreen(game));
+                }
+            }
+        }
+
+        statTime += delta;
+        Gdx.gl.glClearColor(0,0,0,1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        game.batch.begin();
+        game.batch.draw(img2 , 0 , 0 , MyGame2.WIDTH , MyGame2.HEIGHT);
+            //draw controls
+            if (ShowControls) {
+                //chick if mobile
+                if (game.isMobile) {
+                    //Draw the left one
+                    game.batch.setColor(Color.RED);
+                    game.batch.draw(controls, 0, 0, MyGame2.WIDTH / 2, MyGame2.HEIGHT, 0, 0, MyGame2.WIDTH / 2, MyGame2.HEIGHT, false, false);
+                    //Draw the Right one
+                    game.batch.setColor(Color.BLUE);
+                    game.batch.draw(controls, MyGame2.WIDTH / 2, 0, MyGame2.WIDTH / 2, MyGame2.HEIGHT, 0, 0, MyGame2.WIDTH / 2, MyGame2.HEIGHT, true, false);
+                    game.batch.setColor(Color.WHITE);
+                }
+            }
+            //drawin the score
+        //GlyphLayout scoreLayout = new GlyphLayout(ScoreFont , String.valueOf(score));
+        GlyphLayout scoreLayout = new GlyphLayout(ScoreFont , ""+score);
+         ScoreFont.draw(game.batch , scoreLayout ,MyGame2.WIDTH / 2 -scoreLayout.width / 2 , MyGame2.HEIGHT - scoreLayout.height - 10 );
+
+        //draw the falling things and the bullets
+        for (Bullet bullet : bullets){
+            bullet.render(game.batch);
+        }
+        for (FallingThings Fall : Rocks){
+            Fall.render(game.batch);
+        }
+        // draw health according to the place
+        if (health > 0.7){
+            game.batch.setColor(Color.GREEN);
+        }
+        else if (health > 0.4){
+            game.batch.setColor(Color.ORANGE);
+        }
+        else
+            game.batch.setColor(Color.RED);
+        // draw health
+        game.batch.draw(Health , 0 , 0 , MyGame2.WIDTH * health , 5);
+        game.batch.setColor(Color.WHITE);
+        //draw the man walking
+        game.batch.draw((TextureRegion) rolls[roll].getKeyFrame(statTime , true), x , y , MAN_WIDTH , MAN_HEIGHT);
+        game.batch.end();
+
+    }
+    private boolean isRight () {
+        return Gdx.input.isKeyPressed(Input.Keys.RIGHT) || (Gdx.input.isTouched() && game.cam.getInputInGameWorld().x >= MyGame2.WIDTH / 2);
+    }
+
+    private boolean isLeft () {
+        return Gdx.input.isKeyPressed(Input.Keys.LEFT) || (Gdx.input.isTouched() && game.cam.getInputInGameWorld().x < MyGame2.WIDTH / 2);
+    }
+
+    //i am not using those
+    @Override
+    public void resize(int width, int height) {
+
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void hide() {
+
+    }
+
+    @Override
+    public void dispose() {
+
+    }
+}
