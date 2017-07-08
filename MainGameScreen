@@ -3,10 +3,20 @@ public class MainGameScreen implements Screen {
     public static final float MAN_ANIMATION_SPEED = 0.4f;
     public static final int MAN_WIDTH_PIXEL = 19;
     public static final int MAN_HEIGHT_PIXEL = 32;
+    //public static final int BOSS_WIDTH_PIXEL = 23;
+   //public static final int BOSS_HEIGHT_PIXEL = 40;
+    //public static final int BOSS_WIDTH_ = BOSS_WIDTH_PIXEL * 3;
+   // public static final int BOSS_HEIGHT_ = BOSS_HEIGHT_PIXEL * 3;
     public static final int MAN_WIDTH = MAN_WIDTH_PIXEL * 3;
     public static final int MAN_HEIGHT = MAN_HEIGHT_PIXEL * 3;
-    public static final float MIN_SPAWN_TIME = 0.1f;
-    public static final float MAX_SPAWN_TIME = 0.3f;
+    public static final float MIN_SPAWN_TIME_STAR = 13f;
+    public static final float MAX_SPAWN_TIME_STAR = 30f;
+    public static final float MIN_SPAWN_TIME_MID = 8.3f;
+    public static final float MAX_SPAWN_TIME_MID = 14.5f;
+    public static final float MIN_SPAWN_TIME_POISON = 1.3f;
+    public static final float MAX_SPAWN_TIME_POISON = 4.0f;
+    public static final float MIN_SPAWN_TIME_ROCKS = 0.1f;
+    public static final float MAX_SPAWN_TIME_ROCKS = 0.3f;
     public static final float SHOOT_WAIT_TIME = 0.25f;
     public static final float SPEED = 140;
 
@@ -16,21 +26,24 @@ public class MainGameScreen implements Screen {
     private BitmapFont ScoreFont;
 
     Animation [] rolls;
-    float ShootTimer;
+    float shoottimer;
+    float rollTimer;
 
-
-    int roll , score ;
+    int roll , score , count = 0 , shelllifenum = 0;
     Texture img2;
     Texture Health;
     Texture controls;
-    IsToched PlayerToched;
+    IsToched playertoched;
     ArrayList <Bullet> bullets;
-    ArrayList <FallingThings> Rocks;
+    ArrayList<medic>mid;
+    ArrayList<Poison>po;
+    ArrayList <FallingThings> rocks;
+    ArrayList <Star> stars;
     Random random;
-    float FallingSpawnTimer;
+    float fallingspawntimer , fallingmidtimer , fallingstartimer , fallingpoisontimer;
 
     MyGame2 game;
-    boolean ShowControls = true;
+    boolean showcontrols = true;
 
     public MainGameScreen(MyGame2 game) {
         this.game = game;
@@ -43,20 +56,28 @@ public class MainGameScreen implements Screen {
 
         random = new Random();
 
-        FallingSpawnTimer = random.nextFloat() * (MAX_SPAWN_TIME - MIN_SPAWN_TIME) + MIN_SPAWN_TIME;
+        fallingspawntimer = random.nextFloat() * (MAX_SPAWN_TIME_ROCKS - MIN_SPAWN_TIME_ROCKS) + MIN_SPAWN_TIME_ROCKS;
+        fallingmidtimer = random.nextFloat() *(MAX_SPAWN_TIME_MID - MIN_SPAWN_TIME_MID) + MIN_SPAWN_TIME_MID;
+        fallingstartimer = random.nextFloat() * (MAX_SPAWN_TIME_STAR - MIN_SPAWN_TIME_STAR) + MIN_SPAWN_TIME_STAR;
+        fallingpoisontimer = random.nextFloat()*(MAX_SPAWN_TIME_POISON - MIN_SPAWN_TIME_POISON) + MIN_SPAWN_TIME_POISON;
         ScoreFont = new BitmapFont();
 
-        PlayerToched = new IsToched(0 , 0 , MAN_WIDTH , MAN_HEIGHT);
-        ShootTimer = 0;
+        playertoched = new IsToched(0 , 0 , MAN_WIDTH , MAN_HEIGHT);
+        shoottimer = 0;
 
        ScoreFont.getData().setScale(4,4); // How big is the text
 
         x = MyGame2.WIDTH / 2 - MAN_WIDTH / 2;
         roll = 2;
-        score = 0;
+        score  = 0;
         rolls = new Animation[5];
+        rollTimer = 0;
         bullets = new ArrayList<Bullet>();
-        Rocks = new ArrayList<FallingThings>();
+        rocks = new ArrayList<FallingThings>();
+        mid = new ArrayList<medic>();
+        po = new ArrayList<Poison>();
+        stars = new ArrayList<Star>();
+
         TextureRegion[] [] rollSpriteSheet = TextureRegion.split(new Texture("runningGrant.png"),167 , 341); //crating the man animation
 
         rolls[roll] = new Animation(MAN_ANIMATION_SPEED , rollSpriteSheet[0]);
@@ -70,84 +91,184 @@ public class MainGameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // my game input controllers
-        if (isLeft()){
-            x -= SPEED * Gdx.graphics.getDeltaTime();
-        }
-        if (isRight()){
-            x += SPEED * Gdx.graphics.getDeltaTime();
-        }
-        ShootTimer += delta;
-        if ((isRight() || isLeft()) && ShootTimer >= SHOOT_WAIT_TIME){
-            ShootTimer = 0;
-            bullets.add(new Bullet(x+26));
-            //chick if score more than 2500 add new bullet
-            if (score >= 2500){
-                bullets.add(new Bullet(x - 26));
+
+            // my game input controllers
+            if (isLeft()) {
+                x -= SPEED * Gdx.graphics.getDeltaTime();
             }
 
-            ShootTimer-=SHOOT_WAIT_TIME;
-            //stop showing controls when start
-            ShowControls = false;
-        }
-
-        ArrayList<Bullet> BulletsToRemove = new ArrayList<Bullet>();
-        for (Bullet bullet : bullets ){
-            bullet.update(delta);
-            if (bullet.remove){
-                BulletsToRemove.add(bullet);
+            if (isRight()) {
+                x += SPEED * Gdx.graphics.getDeltaTime();
             }
 
-        }
+            if (score > 2600 && count == 0) {SpeedFallingThings += 2;}
 
-        FallingSpawnTimer -= delta;
-        if (FallingSpawnTimer <= 0){
-            FallingSpawnTimer = random.nextFloat() * (MAX_SPAWN_TIME - MIN_SPAWN_TIME) + MIN_SPAWN_TIME;
-            Rocks.add(new FallingThings(random.nextInt((int) (MyGame2.WIDTH - FallingThings.width))));
-        }
-        ArrayList<FallingThings> RockstoRemove = new ArrayList<FallingThings>();
-        for (FallingThings Fall : Rocks){
-            Fall.update(delta);
-            if (Fall.remove){
-                RockstoRemove.add(Fall);
+            if (score == 3100) {count++;}
+
+            if (score > 6000 && count == 1){SpeedFallingThings += 2;}
+
+            if (score == 6300){count++;}
+
+            shoottimer += delta;
+            if ((isRight() || isLeft()) && shoottimer >= SHOOT_WAIT_TIME) {
+                shoottimer = 0;
+                bullets.add(new Bullet(x + 26));
+                //chick if score more than 2600 add new bullet
+                if (score >= 2600) {
+                    bullets.add(new Bullet(x - 26));
+                }
+
+                shoottimer -= SHOOT_WAIT_TIME;
+                //stop showing controls when start
+                showcontrols = false;
             }
-        }
-        //if palyer toched by falling things
-        PlayerToched.move(x ,y);
 
-
-        //check if toched
-        for (Bullet bullet : bullets){
-            for (FallingThings Fall : Rocks){
-                if (bullet.getToched().CollidesWith(Fall.getToched())){
+            ArrayList<Bullet> BulletsToRemove = new ArrayList<Bullet>();
+            for (Bullet bullet : bullets) {
+                bullet.update(delta);
+                if (bullet.remove) {
                     BulletsToRemove.add(bullet);
+                }
+
+            }
+            //where to spawn stars
+            fallingstartimer -= delta;
+            if (fallingstartimer <= 0) {
+                fallingstartimer = random.nextFloat() * (MAX_SPAWN_TIME_STAR - MIN_SPAWN_TIME_STAR) + MIN_SPAWN_TIME_STAR;
+                stars.add(new Star(random.nextInt((int)(MyGame2.WIDTH  - Star.width))));
+            }
+            ArrayList<Star> starsToremove = new ArrayList<Star>();
+            for (Star ss : stars) {
+                ss.update(delta);
+                if (ss.remove) {
+                    starsToremove.add(ss);
+                }
+            }
+            //chick if star toches the man
+            for (Star ss : stars) {
+                if (ss.getToched().CollidesWith(playertoched)) {
+                    starsToremove.add(ss);
+                    shelllifenum += 7;
+                }
+            }
+            stars.removeAll(starsToremove);
+
+        //where to spawn poison
+        fallingpoisontimer -=delta;
+        if (fallingpoisontimer <=0){
+            fallingpoisontimer = random.nextFloat() * (MAX_SPAWN_TIME_POISON - MIN_SPAWN_TIME_POISON) + MIN_SPAWN_TIME_POISON;
+            po.add(new Poison(random.nextInt((int) (MyGame2.WIDTH - Poison.width))));
+        }
+        ArrayList<Poison> poisonToremove = new ArrayList<Poison>();
+        for (Poison poisons : po){
+            poisons.update(delta);
+            if (poisons.remove){
+                poisonToremove.add(poisons);
+            }
+        }
+        //chick if poison toches the man
+        for (Poison poisons : po){
+            if (poisons.getToched().CollidesWith(playertoched)){
+                poisonToremove.add(poisons);
+                if (shelllifenum > 0 && shelllifenum > 5){
+                    shelllifenum -= 5;
+                }
+                else {
+                    shelllifenum = 0;
+                }
+                if (shelllifenum == 0){
+                    health -= 0.5;
+                }
+            }
+        }
+        po.removeAll(poisonToremove);
+
+
+            //where to spawn midic
+            fallingmidtimer -= delta;
+            if (fallingmidtimer <= 0) {
+                fallingmidtimer = random.nextFloat() * (MAX_SPAWN_TIME_MID - MIN_SPAWN_TIME_MID) + MIN_SPAWN_TIME_MID;
+                mid.add(new medic(random.nextInt((int) (MyGame2.WIDTH - medic.width))));
+            }
+
+            ArrayList<medic> midToremove = new ArrayList<medic>();
+            for (medic mm : mid) {
+                mm.update(delta);
+                if (mm.remove) {
+                    midToremove.add(mm);
+                }
+            }
+            //chick if midic toches the man
+            for (medic mm : mid) {
+                if (mm.getToched().CollidesWith(playertoched)) {
+                    midToremove.add(mm);
+                    if (health < 1) {
+                        health += 0.1;
+                    }
+                }
+            }
+            mid.removeAll(midToremove);
+
+            //rocks where to spawn
+            fallingspawntimer -= delta;
+            if (fallingspawntimer <= 0) {
+                fallingspawntimer = random.nextFloat() * (MAX_SPAWN_TIME_ROCKS - MIN_SPAWN_TIME_ROCKS) + MIN_SPAWN_TIME_ROCKS;
+                rocks.add(new FallingThings(random.nextInt((int) (MyGame2.WIDTH - FallingThings.width))));
+            }
+            ArrayList<FallingThings> RockstoRemove = new ArrayList<FallingThings>();
+            for (FallingThings Fall : rocks) {
+                Fall.update(delta);
+                if (Fall.remove) {
                     RockstoRemove.add(Fall);
-                    score +=100;
                 }
             }
-        }
-        bullets.removeAll(BulletsToRemove);
-        Rocks.removeAll(RockstoRemove);
+            //if palyer toched by falling things
+            playertoched.move(x, y);
 
 
-        for (FallingThings Fall : Rocks){
-            if (Fall.getToched().CollidesWith(PlayerToched)){
-                RockstoRemove.add(Fall);
-                health -= 0.01;
-                //if dead what to do
-                if (health <= 0){
-                    game.setScreen(new MainMenuScreen(game));
+            //check if bullet toched Falling things
+            for (Bullet bullet : bullets) {
+                for (FallingThings Fall : rocks) {
+                    if (bullet.getToched().CollidesWith(Fall.getToched())) {
+                        BulletsToRemove.add(bullet);
+                        RockstoRemove.add(Fall);
+                        score += 100;
+                    }
                 }
             }
-        }
+            bullets.removeAll(BulletsToRemove);
+            rocks.removeAll(RockstoRemove);
 
-        statTime += delta;
+
+            for (FallingThings Fall : rocks) {
+                if (Fall.getToched().CollidesWith(playertoched)) {
+                    RockstoRemove.add(Fall);
+                    if (shelllifenum > 0) {
+                        shelllifenum -= 1;
+                    } else {
+                        health -= 0.1;
+                    }
+                    //if dead go to gameoverscreen
+                    if (health <= 0) {
+                        this.dispose();
+                        SpeedFallingThings = 280;
+                        game.setScreen(new GameOverScreen(game, score));
+                        music.pause();
+                        return;
+                    }
+                }
+            }
+            rocks.removeAll(RockstoRemove);
+
+            statTime += delta;
+
+
         Gdx.gl.glClearColor(0,0,0,1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         game.batch.begin();
         game.batch.draw(img2 , 0 , 0 , MyGame2.WIDTH , MyGame2.HEIGHT);
             //draw controls
-            if (ShowControls) {
+            if (showcontrols) {
                 //chick if mobile
                 if (game.isMobile) {
                     //Draw the left one
@@ -164,12 +285,21 @@ public class MainGameScreen implements Screen {
         GlyphLayout scoreLayout = new GlyphLayout(ScoreFont , ""+score);
          ScoreFont.draw(game.batch , scoreLayout ,MyGame2.WIDTH / 2 -scoreLayout.width / 2 , MyGame2.HEIGHT - scoreLayout.height - 10 );
 
-        //draw the falling things and the bullets
+        //draw the falling things and the bullets and the stars and mid and poison
+        for (Poison poisons : po){
+            poisons.render(game.batch);
+        }
         for (Bullet bullet : bullets){
             bullet.render(game.batch);
         }
-        for (FallingThings Fall : Rocks){
+        for (FallingThings Fall : rocks){
             Fall.render(game.batch);
+        }
+        for (medic mm : mid){
+            mm.render(game.batch);
+        }
+        for (Star ss : stars){
+            ss.render(game.batch);
         }
         // draw health according to the place
         if (health > 0.7){
