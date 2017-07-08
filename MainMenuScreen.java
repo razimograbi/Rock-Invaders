@@ -5,9 +5,9 @@
     private static final int PLAY_BUTTON_HEIGHT = 120;
     private static final int EXIT_BUTTON_Y = 100;
     private static final int PLAY_BUTTON_Y = 230;
-    private BitmapFont made;
+    private BitmapFont highscore;
     MyGame2 game;
-
+    public static Music music;
 
     Texture PlayButtonActive;
     Texture img;
@@ -17,8 +17,12 @@
 
     public MainMenuScreen(MyGame2 game){
         this.game = game;
-        made = new BitmapFont();
-        made.getData().setScale(3,3);
+        highscore = new BitmapFont();
+        music = Gdx.audio.newMusic(Gdx.files.internal("10-escape-from-the-city-instrumental-.mp3"));
+        music.setLooping(true);
+        music.setVolume(0.6f);
+        music.play();
+        highscore.getData().setScale(3,3);
         img = new Texture("video-game-background-1405076_960_720.png");
         PlayButtonActive = new Texture("play_button_active121.png");
         PlayButtonInactive = new Texture("play_button_inactive.png");
@@ -35,10 +39,9 @@
     public void render(float delta) {
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        music.play();
         game.batch.begin();
         game.batch.draw(img , 0 , 0);
-        GlyphLayout madelayout = new GlyphLayout(made, "Made by Razi");
-        made.draw(game.batch , madelayout ,MyGame2.WIDTH / 2 -madelayout.width / 2 , MyGame2.HEIGHT - madelayout.height - 200 );
         int middle = MyGame2.WIDTH / 2 - EXIT_BUTTON_WIDTH / 2;
         if (game.cam.getInputInGameWorld().x < middle + EXIT_BUTTON_WIDTH && game.cam.getInputInGameWorld().x > middle && MyGame2.HEIGHT - game.cam.getInputInGameWorld().y < EXIT_BUTTON_Y + EXIT_BUTTON_HEIGHT && MyGame2.HEIGHT - game.cam.getInputInGameWorld().y > EXIT_BUTTON_Y) {
             game.batch.draw(ExitButtonActive, middle, EXIT_BUTTON_Y, EXIT_BUTTON_WIDTH, EXIT_BUTTON_HEIGHT);
@@ -54,6 +57,7 @@
             game.batch.draw(PlayButtonActive, middle, PLAY_BUTTON_Y, PLAY_BUTTON_wIDTH, PLAY_BUTTON_HEIGHT);
             if (Gdx.input.isTouched()) {
                 this.dispose();
+                music.play();
                 game.setScreen(new MainGameScreen(game));
             }
 
