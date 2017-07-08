@@ -10,17 +10,17 @@ public class MyGame2 extends Game {
 	public static final int WIDTH = 480;
 	public static final int HEIGHT = 720;
 	public boolean isMobile = false;
-    public GameCamera cam;
+    public com.razi.game.tools.GameCamera cam;
 	
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
-        cam = new GameCamera(WIDTH , HEIGHT);
+        cam = new com.razi.game.tools.GameCamera(WIDTH , HEIGHT);
 
 		if (Gdx.app.getType() == Application.ApplicationType.Android || Gdx.app.getType() == Application.ApplicationType.iOS){
 			isMobile = true;
 		}
-		this.setScreen(new MainMenuScreen(this));
+		this.setScreen(new com.razi.game.screens.MainMenuScreen(this));
 	}
 
 	@Override
