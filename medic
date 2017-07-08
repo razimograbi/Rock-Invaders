@@ -1,0 +1,33 @@
+public class medic {
+    public static final float width = 50;
+    public static final float height = 50;
+    public static final int Width = 50;
+    public static final int Hieght = 50;
+    public static  int speedstar = 200;
+    public boolean remove  = false;
+    float x , y;
+    IsToched toched;
+    private static Texture texture;
+    public medic(float x){
+        this.x = x;
+        this.toched = new IsToched(x , y , Width , Hieght);
+        this.y = com.razi.game.MyGame2.HEIGHT;
+        if (texture == null){
+            texture = new Texture("Perk_Medic.png");
+        }
+    }
+    public void update(float deltatime){
+        y-=speedstar*deltatime;
+        if (y< -height){
+            remove = true;
+        }
+        toched.move(x, y);
+    }
+    public void render (SpriteBatch batch){
+        batch.draw(texture , x , y , width , height);
+    }
+
+    public IsToched getToched (){
+        return toched;
+    }
+}
