@@ -1,0 +1,33 @@
+public class Poison {
+    public static final float width = 50;
+    public static final float height = 50;
+    public static final int Width = 50;
+    public static final int Hieght = 50;
+    public static  int speedpoison = 200;
+    public boolean remove  = false;
+    float x , y;
+    IsToched toched;
+    private static Texture texture;
+    public Poison(float x){
+        this.x = x;
+        this.toched = new IsToched(x , y , Width , Hieght);
+        this.y = MyGame2.HEIGHT;
+        if (texture == null){
+            texture = new Texture("PoisonGame.png");
+        }
+    }
+    public void update(float deltatime){
+        y-=speedpoison*deltatime;
+        if (y< -height){
+            remove = true;
+        }
+        toched.move(x, y);
+    }
+    public void render (SpriteBatch batch){
+        batch.draw(texture , x , y , width , height);
+    }
+
+    public IsToched getToched (){
+        return toched;
+    }
+}
